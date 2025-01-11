@@ -1,6 +1,5 @@
 package com.packt.hogwartsartifactsonline.wizard.converter;
 
-import com.packt.hogwartsartifactsonline.artifact.converter.ArtifactToArtifactDtoConverter;
 import com.packt.hogwartsartifactsonline.wizard.Wizard;
 import com.packt.hogwartsartifactsonline.wizard.dto.WizardDto;
 import org.springframework.core.convert.converter.Converter;

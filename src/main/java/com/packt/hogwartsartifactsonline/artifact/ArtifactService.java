@@ -1,7 +1,6 @@
 package com.packt.hogwartsartifactsonline.artifact;
 
 import jakarta.transaction.Transactional;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
