@@ -3,7 +3,9 @@ package com.packt.hogwartsartifactsonline.artifact;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.packt.hogwartsartifactsonline.artifact.dto.ArtifactDto;
 import com.packt.hogwartsartifactsonline.system.StatusCode;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,8 +20,11 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @SpringBootTest
@@ -28,8 +33,12 @@ class ArtifactControllerTest {
     @MockitoBean
     private ArtifactService artifactService;
     @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
     MockMvc mockMvc;
     List<Artifact> artifacts;
+    @Autowired
+    private ArtifactRepository artifactRepository;
 
     @BeforeEach
     void setUp() throws JsonProcessingException {
@@ -104,7 +113,7 @@ class ArtifactControllerTest {
     }
 
     @Test
-    void findArtifact() throws Exception {
+    void testFindArtifactByIdSuccess() throws Exception {
         //Given
         given(artifactService.findById("1250808601744904191")).willReturn(artifacts.get(0));
         //When and then
@@ -117,7 +126,7 @@ class ArtifactControllerTest {
     }
 
     @Test
-    void findArtifactNotFound() throws Exception {
+    void testFindArtifactByIdNotFound() throws Exception {
         String id = "1250808601744904191";
         //Given
         given(artifactService.findById(Mockito.anyString())).willThrow(new ArtifactNotFoundException(id));
@@ -127,5 +136,138 @@ class ArtifactControllerTest {
                 .andExpect(jsonPath("$.code").value(StatusCode.NOT_FOUND))
                 .andExpect(jsonPath("$.message").value("Could not find artifact with id " + id))
                 .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
+    void testFindAllArtifactsSuccess() throws Exception {
+        given(artifactService.findAll()).willReturn(artifacts);
+        this.mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/artifacts").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.flag").value(true))
+                .andExpect(jsonPath("$.code").value(StatusCode.SUCCESS))
+                .andExpect(jsonPath("$.message").value("Find All Success"))
+                .andExpect(jsonPath("$.data", Matchers.hasSize(artifacts.size())))
+                .andExpect(jsonPath("$.data[0].id").value("1250808601744904191"))
+                .andExpect(jsonPath("$.data[0].name").value("Deluminator"))
+                .andExpect(jsonPath("$.data[1].id").value("1250808601744904192"))
+                .andExpect(jsonPath("$.data[1].name").value("Invisibility Cloak"));
+
+    }
+
+    @Test
+    void testFindAllArtifactsEmpty() throws Exception {
+        given(artifactService.findAll()).willReturn(List.of());
+        this.mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/artifacts").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.flag").value(false))
+                .andExpect(jsonPath("$.code").value(StatusCode.NOT_FOUND))
+                .andExpect(jsonPath("$.message").value("Could not find any artifacts"));
+    }
+
+    @Test
+    void testCreateArtifactSuccess() throws Exception {
+        //Given
+        ArtifactDto artifactDto = new ArtifactDto(null, "Calvin ILOKI", "Calvin ILOKI NGAKOSSO", "ImageUrl", null);
+        String jsonArtifact = objectMapper.writeValueAsString(artifactDto);
+
+        Artifact expectedArtifact = new Artifact();
+        expectedArtifact.setId("1250808601744904197");
+        expectedArtifact.setName("Calvin ILOKI");
+        expectedArtifact.setDescription("Calvin ILOKI NGAKOSSO");
+        expectedArtifact.setImageUrl("ImageUrl");
+
+        given(artifactService.save(Mockito.any(Artifact.class))).willReturn(expectedArtifact);
+        //When and then
+        this.mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/artifacts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(jsonArtifact))
+                .andExpect(jsonPath("$.flag").value(true))
+                .andExpect(jsonPath("$.code").value(StatusCode.SUCCESS))
+                .andExpect(jsonPath("$.message").value("Artifact Created successfully"))
+                .andExpect(jsonPath("$.data.id").value("1250808601744904197"))
+                .andExpect(jsonPath("$.data.name").value("Calvin ILOKI"))
+                .andExpect(jsonPath("$.data.description").value("Calvin ILOKI NGAKOSSO"))
+                .andExpect(jsonPath("$.data.imageUrl").value("ImageUrl"));
+        verify(artifactService, times(1)).save(Mockito.any(Artifact.class));
+
+    }
+
+    @Test
+    void testCreateArtifactFailure() throws Exception {
+        //Given
+        ArtifactDto artifactDto = new ArtifactDto(null, "Calvin ILOKI", "Calvin ILOKI NGAKOSSO", "ImageUrl", null);
+        String jsonArtifact = objectMapper.writeValueAsString(artifactDto);
+
+        Artifact expectedArtifact = new Artifact();
+        expectedArtifact.setId("1250808601744904197");
+        expectedArtifact.setName("Calvin ILOKI");
+        expectedArtifact.setDescription("Calvin ILOKI NGAKOSSO");
+        expectedArtifact.setImageUrl("ImageUrl");
+
+        given(artifactService.save(Mockito.any(Artifact.class))).willReturn(expectedArtifact);
+        //When and then
+        this.mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/artifacts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(jsonArtifact))
+                .andExpect(jsonPath("$.flag").value(true))
+                .andExpect(jsonPath("$.code").value(StatusCode.SUCCESS))
+                .andExpect(jsonPath("$.message").value("Artifact Created successfully"))
+                .andExpect(jsonPath("$.data.id").value("1250808601744904197"))
+                .andExpect(jsonPath("$.data.name").value("Calvin ILOKI"))
+                .andExpect(jsonPath("$.data.description").value("Calvin ILOKI NGAKOSSO"))
+                .andExpect(jsonPath("$.data.imageUrl").value("ImageUrl"));
+        verify(artifactService, times(1)).save(Mockito.any(Artifact.class));
+
+    }
+
+    @Test
+    void testUpdateArtifactSuccess() throws Exception {
+        //Given
+        ArtifactDto expectedArtifactDto = new ArtifactDto("1250808601744904197", "Calvin ILOKI", "Java Backend Developer", "ImageUrl", null);
+        String jsonArtifact = objectMapper.writeValueAsString(expectedArtifactDto);
+
+        Artifact expectedArtifact = new Artifact();
+        expectedArtifact.setId("1250808601744904197");
+        expectedArtifact.setName("Calvin ILOKI");
+        expectedArtifact.setDescription("Java Backend Developer");
+        expectedArtifact.setImageUrl("ImageUrl");
+
+        given(artifactService.update(Mockito.eq(expectedArtifactDto.id()), Mockito.any(Artifact.class)))
+                .willReturn(expectedArtifact);
+        //When and then
+        this.mockMvc.perform(MockMvcRequestBuilders.put("/api/v1/artifacts/" + expectedArtifactDto.id())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(jsonArtifact))
+                .andExpect(jsonPath("$.flag").value(true))
+                .andExpect(jsonPath("$.code").value(StatusCode.SUCCESS))
+                .andExpect(jsonPath("$.message").value("Artifact Updated successfully"))
+                .andExpect(jsonPath("$.data.id").value(expectedArtifactDto.id()))
+                .andExpect(jsonPath("$.data.name").value(expectedArtifactDto.name()))
+                .andExpect(jsonPath("$.data.description").value(expectedArtifactDto.description()))
+                .andExpect(jsonPath("$.data.imageUrl").value(expectedArtifactDto.imageUrl()));
+        verify(artifactService, times(1)).update(Mockito.eq(expectedArtifactDto.id()), Mockito.any(Artifact.class));
+
+    }
+
+    @Test
+    void testUpdateArtifactErrorWithNonExistentId() throws Exception {
+        //Given
+        ArtifactDto expectedArtifactDto = new ArtifactDto("1250808601744904197", "Calvin ILOKI", "Java Backend Developer", "ImageUrl", null);
+        String jsonArtifact = objectMapper.writeValueAsString(expectedArtifactDto);
+
+        given(artifactService.update(Mockito.eq(expectedArtifactDto.id()), Mockito.any(Artifact.class)))
+                .willThrow(new ArtifactNotFoundException(expectedArtifactDto.id()));
+        //When and then
+        this.mockMvc.perform(MockMvcRequestBuilders.put("/api/v1/artifacts/" + expectedArtifactDto.id())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(jsonArtifact))
+                .andExpect(jsonPath("$.flag").value(false))
+                .andExpect(jsonPath("$.code").value(StatusCode.NOT_FOUND))
+                .andExpect(jsonPath("$.message").value("Could not find artifact with id " + expectedArtifactDto.id()))
+                .andExpect(jsonPath("$.data").isEmpty());
+        verify(artifactService, times(1)).update(Mockito.eq(expectedArtifactDto.id()), Mockito.any(Artifact.class));
+
     }
 }
